@@ -3,6 +3,7 @@ class PhoneBookEntry {
     constructor(name, phoneNumber) {
         this.name = name
         this.phoneNumber = phoneNumber
+        this.id = name + phoneNumber
     }
 }
 
@@ -11,7 +12,7 @@ class UI {
 
     static displayEntries() {
         const entries = Storage.getEntries()
-        entries.forEach((entry) => UI.addEntry(entry))
+        entries.forEach((entry) => UI.addEntryToList(entry))
     }
 
     static addEntryToList(entry) {
@@ -56,7 +57,7 @@ class UI {
         `
         // append DOM
         namesUl.insertBefore(newEntry, namesUl.children[insertIndex])
-
+        
     }
 
     static deleteEntry(element) {
@@ -70,7 +71,6 @@ class UI {
         const afterTargetHeaderIndex = surroundingHeaders["afterTargetHeaderIndex"]
 
 
-        console.log(`target: ${targetHeaderIndex} / afterTarget: ${afterTargetHeaderIndex}`)
         // check if difference of index is 2 (header: 0, elements: 1, afterHeader: 2)
         if(afterTargetHeaderIndex - targetHeaderIndex == 2) {
             // if so delete header
@@ -163,13 +163,34 @@ class UI {
 // handles local storage
 class Storage {
     // get items from storage
+    static getEntries() {
+        let entries
+        if(localStorage.getItem('entries') == null) {
+            entries = []
+        } else {
+            entries = JSON.parse(localStorage.getItem('entries'))
+        }
+        return entries
+    }
 
     // add item to storage
+    static addEntry(entry) {
+        var entries = Storage.getEntries()
+        entries.push(entry)
+        localStorage.setItem('entries',JSON.stringify(entries))
+    }
 
     // remove item from storage
+    static removeEntry(entryId) {
+        var entries = Storage.getEntries()
+        entries.forEach((entry, index) => {
+            if(entry.id == entryId) {
+                entries.splice(index,1)
+            }
+        })
+        localStorage.setItem('entries', JSON.stringify(entries))
+    }
 }
-
-
 
 
 // get input element
@@ -237,7 +258,7 @@ document.querySelector('#addEntry').addEventListener('click', (e) => {
             // add entry to UI
             UI.addEntryToList(newEntry)
             // add entry to local storage
-            // TODO
+            Storage.addEntry(newEntry)
 
             // clear input fields
             document.querySelector('#name').value = ''
@@ -258,5 +279,13 @@ document.querySelector('#names').addEventListener('click', (e) => {
         UI.deleteEntry(e.target.parentElement.parentElement)
 
         // remove from local storage
+        
+        const name = e.target.parentElement.parentElement.querySelector('#name').children[0].innerHTML
+        const phoneNumber = e.target.parentElement.parentElement.querySelector('#phoneNumber').children[0].innerHTML
+        entryId = name + phoneNumber
+        Storage.removeEntry(entryId)
     }
 })
+
+// display locally saved entries
+document.addEventListener('DOMContentLoaded',UI.displayEntries)
