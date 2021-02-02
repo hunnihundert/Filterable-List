@@ -9,8 +9,6 @@ class PhoneBookEntry {
 // handles UI tasks
 class UI {
 
-
-
     static displayEntries() {
         const entries = Storage.getEntries()
         entries.forEach((entry) => UI.addEntry(entry))
@@ -20,29 +18,15 @@ class UI {
         const firstLetterOfEntry = entry.name.charAt(0).toUpperCase()
         // check if it is the first entry with the starting letter and add if non-existent
         UI.addHeaderIfNonExistent(firstLetterOfEntry)
-
+        const namesUl = document.querySelector('#names')
         // add to list
         // find position to add
         let insertIndex
-        const namesUl = document.querySelector('#names')
-        // find header
-        let targetHeader
-        let afterHeaderTarget
-        const namesHeaders = namesUl.querySelectorAll('.collection-header')
-        for (var i = 0; i < namesHeaders.length; i++) {
-            const namesHeadersFirstLetter = namesHeaders[i].querySelector('h5').innerHTML
-            if (namesHeadersFirstLetter == firstLetterOfEntry) {
-                targetHeader = namesHeaders[i]
-            } else if (namesHeadersFirstLetter > firstLetterOfEntry) {
-                afterHeaderTarget = namesHeaders[i]
-                break
-            }
-        }
-        const targetHeaderIndex = Array.prototype.indexOf.call(namesUl.children, targetHeader)
-        var afterTargetHeaderIndex = Array.prototype.indexOf.call(namesUl.children, afterHeaderTarget)
-        if (afterTargetHeaderIndex == -1) {
-            afterTargetHeaderIndex = namesUl.children.length
-        }
+        
+        // get index from surrounding headers
+        const surroundingHeaders = this.getSurroundingHeaderIndexes(firstLetterOfEntry)
+        const targetHeaderIndex = surroundingHeaders["targetHeaderIndex"]
+        const afterTargetHeaderIndex = surroundingHeaders["afterTargetHeaderIndex"]
 
         // check the list elements after the header (before next header)
         // if no list element exists, position is right after header
@@ -50,7 +34,7 @@ class UI {
 
             insertIndex = afterTargetHeaderIndex
         } else {
-            // if list element exists, position is alphabetically set
+            // if list element exists, position is set alphabetically
             // travers through list elements and find alphabetical correct position
             for (var i = targetHeaderIndex + 1; i < afterTargetHeaderIndex; i++) {
                 const nameInList = namesUl.children[i].querySelector('a').innerHTML
@@ -66,8 +50,9 @@ class UI {
         const newEntry = document.createElement('li')
         newEntry.className = 'collection-item row'
         newEntry.innerHTML = `
-        <div class="col s8"><a href="#">${entry.name}</a></div>
-        <div class="col s4"><a href="#">${entry.phoneNumber}</a></div>
+        <div class="col s8" id="name"><a href="#">${entry.name}</a></div>
+        <div class="col s3" id="phoneNumber"><a href="#">${entry.phoneNumber}</a></div>
+        <div class="col s1"><a href="#" class="btn red darken-1" id="delete">x</a></div>
         `
         // append DOM
         namesUl.insertBefore(newEntry, namesUl.children[insertIndex])
@@ -75,8 +60,26 @@ class UI {
     }
 
     static deleteEntry(element) {
-        // remove element from the parent
+        
+        // check if list below header is empty, if so delete header, too
+        // get first letter of element
+        const firstLetterOfEntry = element.querySelector('#name').children[0].innerHTML.charAt(0).toUpperCase()
+        // find index of header and index of header of the next starting letter
+        const surroundingHeaders = this.getSurroundingHeaderIndexes(firstLetterOfEntry)
+        const targetHeaderIndex = surroundingHeaders["targetHeaderIndex"]
+        const afterTargetHeaderIndex = surroundingHeaders["afterTargetHeaderIndex"]
 
+
+        console.log(`target: ${targetHeaderIndex} / afterTarget: ${afterTargetHeaderIndex}`)
+        // check if difference of index is 2 (header: 0, elements: 1, afterHeader: 2)
+        if(afterTargetHeaderIndex - targetHeaderIndex == 2) {
+            // if so delete header
+            element.parentElement.children[targetHeaderIndex].remove()
+        }
+
+        // remove element
+        element.remove()
+        
     }
 
     static showAlert(message, className) {
@@ -121,6 +124,39 @@ class UI {
             // insert the header
             namesUl.insertBefore(newHeader, namesUl.children[index])
         }
+    }
+
+    static getSurroundingHeaderIndexes(firstLetterOfEntry) {
+        const namesUl = document.querySelector('#names')
+        let targetHeader
+        let afterHeaderTarget
+        
+        // get all headers
+        const namesHeaders = namesUl.querySelectorAll('.collection-header')
+        for (var i = 0; i < namesHeaders.length; i++) {
+            
+            const namesHeadersFirstLetter = namesHeaders[i].querySelector('h5').innerHTML
+            if (namesHeadersFirstLetter == firstLetterOfEntry) {
+                targetHeader = namesHeaders[i]
+            } else if (namesHeadersFirstLetter > firstLetterOfEntry) {
+                afterHeaderTarget = namesHeaders[i]
+                break
+            }
+        }
+
+        // get the index of target header and after header inside children of ul
+        const targetHeaderIndex = Array.prototype.indexOf.call(namesUl.children, targetHeader)
+        var afterTargetHeaderIndex = Array.prototype.indexOf.call(namesUl.children, afterHeaderTarget)
+        
+        // if there is no afterheader then it is the last item among the children of the ul
+        if (afterTargetHeaderIndex == -1) {
+            afterTargetHeaderIndex = namesUl.children.length
+        }
+        
+        var surroundingHeaders = {}
+        surroundingHeaders["targetHeaderIndex"] = targetHeaderIndex
+        surroundingHeaders["afterTargetHeaderIndex"] = afterTargetHeaderIndex
+        return surroundingHeaders
     }
 }
 
@@ -210,4 +246,17 @@ document.querySelector('#addEntry').addEventListener('click', (e) => {
 
     }
 
+})
+
+// add click listener to the list
+document.querySelector('#names').addEventListener('click', (e) => {
+    
+    // check if 'x' button was clicked
+    if(e.target.id == 'delete') {
+        
+        // remove from UI
+        UI.deleteEntry(e.target.parentElement.parentElement)
+
+        // remove from local storage
+    }
 })
