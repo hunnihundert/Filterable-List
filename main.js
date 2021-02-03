@@ -82,14 +82,6 @@ class UI {
         
     }
 
-    static showAlert(message, className) {
-        // show alert, if entry field is missing
-
-        // show alert that entry has been added successfully
-
-        // show alert that entry has been deleted successfully
-    }
-
     static addHeaderIfNonExistent(firstLetterOfEntry) {
         const namesUl = document.querySelector('#names')
         const namesHeaders = namesUl.querySelectorAll('.collection-header')
